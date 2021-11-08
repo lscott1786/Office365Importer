@@ -20,7 +20,6 @@ try:
 except Exception as err:
     pass
 
-
 class StealthwatchClient:
     """This is an API client for Cisco Stealthwatch Enterprise."""
 
@@ -32,7 +31,7 @@ class StealthwatchClient:
     __validate_certs = None
     __version = None
 
-    __debug = False
+    __debug = True
 
     def __init__(self, debug=False, validate_certs=True, *args, **kwargs):
         """Initialize the Stealthwatch Client object."""
@@ -103,7 +102,16 @@ class StealthwatchClient:
         }
 
         # Post authentication to Stealthwatch
+
         response = self._post_request(url, data=login_credentials)
+
+        for cookie in response.cookies:
+            if cookie.name == 'XSRF-TOKEN':
+                xsrfcookie = cookie.value
+                global headers 
+                headers = {
+                    'X-XSRF-TOKEN': xsrfcookie
+                }
 
         return response.text
 
@@ -122,7 +130,7 @@ class StealthwatchClient:
             print("Getting Stealthwatch Tags...")
 
         # Get Tag data from Stealthwatch
-        response = self._get_request(url, json=data)
+        response = self._get_request(url, headers=headers, json=data)
 
         return response.json()
     
@@ -163,7 +171,7 @@ class StealthwatchClient:
         }]
 
         # Post Tag data to Stealthwatch
-        response = self._post_request(url, json=data)
+        response = self._post_request(url, headers=headers, json=data)
 
         return response.json()
 
@@ -291,9 +299,9 @@ class StealthwatchClient:
         try:
             # Make a GET request to the SMC
             if json:
-                response = self.__session.get(url, json=json, verify=self.__validate_certs)
+                response = self.__session.get(url, json=json, headers=headers, verify=self.__validate_certs)
             else:
-                response = self.__session.get(url, verify=self.__validate_certs)
+                response = self.__session.get(url, headers=headers, verify=self.__validate_certs)
 
             # If the request was successful, then proceed
             if response.status_code >= 200 and response.status_code < 300:
@@ -310,7 +318,7 @@ class StealthwatchClient:
             print("Unable to GET from the SMC!\nError: {}".format(err))
             exit()
 
-    def _post_request(self, url, data=None, json=None):
+    def _post_request(self, url, headers=None, data=None, json=None):
         """Performs an HTTP POST request."""
 
         if self.__debug:
@@ -319,11 +327,11 @@ class StealthwatchClient:
         try:
             # Make a POST request to the SMC
             if data:
-                response = self.__session.post(url, data=data, verify=self.__validate_certs)
+                response = self.__session.post(url, headers=headers, data=data, verify=self.__validate_certs)
             elif json:
-                response = self.__session.post(url, json=json, verify=self.__validate_certs)
+                response = self.__session.post(url, headers=headers, json=json, verify=self.__validate_certs)
             else:
-                response = self.__session.post(url, verify=self.__validate_certs)
+                response = self.__session.post(url, headers=headers, verify=self.__validate_certs)
 
             # If the request was successful, then proceed
             if response.status_code >= 200 and response.status_code < 300:
